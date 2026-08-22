@@ -4,6 +4,7 @@
  */
 
 import { COLOR_PALETTES, PALETTE_GROUPS } from "../color-palettes.ts";
+import { PADDING_PRESETS } from "../default.ts";
 import {
   bandGapFromHoleSize,
   DEFAULTS,
@@ -20,6 +21,9 @@ import {
 type State = Omit<Required<HexKnotParams>, "idPrefix" | "onWarn">;
 
 const { idPrefix: _idPrefix, ...stateDefaults } = DEFAULTS;
+// The playground previews the bare mark: padding starts at the "none" preset
+// (0) and is picked via the preset select above the preview.
+stateDefaults.padding = PADDING_PRESETS.none;
 
 // The numeric parameters, each with the control range it gets in the sidebar.
 // `NumericKey` is derived from State, so TypeScript keeps this registry
@@ -299,6 +303,29 @@ controls.append(el("div", { class: "palettes" }, ...paletteGroups));
 
 // ----------------------------------------------------------------- actions
 
+// Padding preset: a quick pick for `padding`, applied to the live preview
+// (and thus everything copied/downloaded). The sidebar slider remains the
+// fine-grained control; a value matching no preset shows as "custom".
+const paddingSelect = $<HTMLSelectElement>("#padding-preset");
+paddingSelect.append(
+  ...Object.entries(PADDING_PRESETS).map(([name, value]) =>
+    el("option", { value: String(value) }, name),
+  ),
+  el("option", { value: "custom", disabled: "", hidden: "" }, "custom"),
+);
+paddingSelect.addEventListener("input", () => {
+  setSliderValue("padding", Number(paddingSelect.value));
+  render();
+});
+
+/** Point the preset select at the current state.padding. */
+function syncPaddingSelect(): void {
+  const value = String(state.padding);
+  paddingSelect.value = Object.values(PADDING_PRESETS).some((p) => String(p) === value)
+    ? value
+    : "custom";
+}
+
 $("#reset").addEventListener("click", () => {
   Object.assign(state, stateDefaults, { colors: [...stateDefaults.colors] });
   for (const key of NUMERIC_KEYS) setSliderValue(key, state[key]);
@@ -324,18 +351,22 @@ $("#download").addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
-// PNG export rasterizes at a fixed resolution regardless of the mark's own
-// `size`/`padding`, so the exported icon stays crisp however small the
-// on-screen preview is configured.
+// PNG export rasterizes at the width given by the "PNG size" input (height
+// follows the aspect ratio), independent of the mark's own `size`, so the
+// exported icon stays crisp however the preview is configured.
 const PNG_EXPORT_SIZE = 1024;
+
+const pngSizeInput = $<HTMLInputElement>("#png-size");
+pngSizeInput.value = String(PNG_EXPORT_SIZE);
 
 $("#download-png").addEventListener("click", async () => {
   const match = /viewBox="([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+)"/.exec(currentSvg);
   if (!match) return;
   const [, , , viewBoxWidth, viewBoxHeight] = match.map(Number);
+  const pngSize = Math.round(Number(pngSizeInput.value)) || PNG_EXPORT_SIZE;
   const canvas = document.createElement("canvas");
-  canvas.width = PNG_EXPORT_SIZE;
-  canvas.height = Math.round((PNG_EXPORT_SIZE * viewBoxHeight) / viewBoxWidth);
+  canvas.width = pngSize;
+  canvas.height = Math.round((pngSize * viewBoxHeight) / viewBoxWidth);
 
   const svgUrl = URL.createObjectURL(new Blob([currentSvg], { type: "image/svg+xml" }));
   try {
@@ -472,6 +503,7 @@ function render(): void {
     sliderRows.get(key)!.classList.toggle("inactive", inactive);
   }
 
+  syncPaddingSelect();
   syncFaviconAnimation();
   syncUrl();
 }
