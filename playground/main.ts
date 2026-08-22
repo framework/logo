@@ -324,6 +324,41 @@ $("#download").addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
+// PNG export rasterizes at a fixed resolution regardless of the mark's own
+// `size`/`padding`, so the exported icon stays crisp however small the
+// on-screen preview is configured.
+const PNG_EXPORT_SIZE = 1024;
+
+$("#download-png").addEventListener("click", async () => {
+  const match = /viewBox="([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+)"/.exec(currentSvg);
+  if (!match) return;
+  const [, , , viewBoxWidth, viewBoxHeight] = match.map(Number);
+  const canvas = document.createElement("canvas");
+  canvas.width = PNG_EXPORT_SIZE;
+  canvas.height = Math.round((PNG_EXPORT_SIZE * viewBoxHeight) / viewBoxWidth);
+
+  const svgUrl = URL.createObjectURL(new Blob([currentSvg], { type: "image/svg+xml" }));
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Failed to rasterize SVG"));
+      img.src = svgUrl;
+    });
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+  } finally {
+    URL.revokeObjectURL(svgUrl);
+  }
+
+  const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (!pngBlob) return;
+  const pngUrl = URL.createObjectURL(pngBlob);
+  const link = el("a", { href: pngUrl, download: "hexknot.png" });
+  link.click();
+  URL.revokeObjectURL(pngUrl);
+});
+
 // -------------------------------------------------------- animated favicon
 //
 // A data-URI SVG favicon doesn't reliably replay its embedded SMIL <animate>
