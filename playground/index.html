@@ -22,11 +22,16 @@
         <div id="stage-actions">
           <label id="padding-control"
             >padding
-            <select id="padding-preset"></select
-          ></label>
+            <select id="padding-preset"></select>
+            <input id="padding-slider" type="range" min="0" max="256" step="1"
+          /></label>
           <button id="copy" type="button">Copy SVG</button>
           <button id="download" type="button">Download SVG</button>
-          <label>PNG size <input id="png-size" type="number" min="16" max="4096" step="1" /></label>
+          <label
+            >PNG size
+            <select id="png-size-preset"></select>
+            <input id="png-size" type="number" min="16" max="4096" step="1"
+          /></label>
           <button id="download-png" type="button">Download PNG</button>
         </div>
         <div id="preview"></div>

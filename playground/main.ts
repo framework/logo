@@ -303,10 +303,11 @@ controls.append(el("div", { class: "palettes" }, ...paletteGroups));
 
 // ----------------------------------------------------------------- actions
 
-// Padding preset: a quick pick for `padding`, applied to the live preview
-// (and thus everything copied/downloaded). The sidebar slider remains the
-// fine-grained control; a value matching no preset shows as "custom".
+// Padding: a preset pick plus a free slider, applied to the live preview
+// (and thus everything copied/downloaded). Both drive the same `padding` as
+// the sidebar row; a value matching no preset shows as "custom".
 const paddingSelect = $<HTMLSelectElement>("#padding-preset");
+const paddingSlider = $<HTMLInputElement>("#padding-slider");
 paddingSelect.append(
   ...Object.entries(PADDING_PRESETS).map(([name, value]) =>
     el("option", { value: String(value) }, name),
@@ -317,13 +318,18 @@ paddingSelect.addEventListener("input", () => {
   setSliderValue("padding", Number(paddingSelect.value));
   render();
 });
+paddingSlider.addEventListener("input", () => {
+  setSliderValue("padding", Number(paddingSlider.value));
+  render();
+});
 
-/** Point the preset select at the current state.padding. */
-function syncPaddingSelect(): void {
+/** Point the preset select & stage slider at the current state.padding. */
+function syncPaddingControls(): void {
   const value = String(state.padding);
   paddingSelect.value = Object.values(PADDING_PRESETS).some((p) => String(p) === value)
     ? value
     : "custom";
+  paddingSlider.value = value;
 }
 
 $("#reset").addEventListener("click", () => {
@@ -351,13 +357,28 @@ $("#download").addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
-// PNG export rasterizes at the width given by the "PNG size" input (height
+// PNG export rasterizes at the width given by the "PNG size" controls (height
 // follows the aspect ratio), independent of the mark's own `size`, so the
-// exported icon stays crisp however the preview is configured.
+// exported icon stays crisp however the preview is configured. The preset
+// select offers the usual icon sizes; the input takes any value.
 const PNG_EXPORT_SIZE = 1024;
+const PNG_SIZE_PRESETS = [16, 32, 64, 128, 256, 512, 1024, 2048];
 
+const pngSizeSelect = $<HTMLSelectElement>("#png-size-preset");
 const pngSizeInput = $<HTMLInputElement>("#png-size");
+pngSizeSelect.append(
+  ...PNG_SIZE_PRESETS.map((px) => el("option", { value: String(px) }, String(px))),
+  el("option", { value: "custom", disabled: "", hidden: "" }, "custom"),
+);
 pngSizeInput.value = String(PNG_EXPORT_SIZE);
+pngSizeSelect.value = String(PNG_EXPORT_SIZE);
+pngSizeSelect.addEventListener("input", () => {
+  pngSizeInput.value = pngSizeSelect.value;
+});
+pngSizeInput.addEventListener("input", () => {
+  const value = pngSizeInput.value;
+  pngSizeSelect.value = PNG_SIZE_PRESETS.some((px) => String(px) === value) ? value : "custom";
+});
 
 $("#download-png").addEventListener("click", async () => {
   const match = /viewBox="([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+)"/.exec(currentSvg);
@@ -503,7 +524,7 @@ function render(): void {
     sliderRows.get(key)!.classList.toggle("inactive", inactive);
   }
 
-  syncPaddingSelect();
+  syncPaddingControls();
   syncFaviconAnimation();
   syncUrl();
 }

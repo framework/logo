@@ -235,6 +235,12 @@ button:disabled {
   gap: 8px;
   justify-content: flex-end;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+#stage-actions input[type="range"] {
+  width: 110px;
+  accent-color: #7209b7;
 }
 
 #stage-actions label {
@@ -272,13 +278,15 @@ button:disabled {
   justify-content: center;
   border: 1px solid #e4e4e7;
   border-radius: 12px;
-  /* Checkerboard so a transparent background is visible. */
-  background: conic-gradient(#e9e9ec 0 25%, #ffffff 0 50%, #e9e9ec 0 75%, #ffffff 0) 0 0 / 24px 24px;
+  background: #fafafa;
 }
 
+/* The checkerboard sits on the svg itself, so it marks the exact canvas
+   (incl. `padding`) and makes a transparent background visible. */
 #preview svg {
   width: min(70vmin, 100%);
   height: min(70vmin, 100%);
+  background: conic-gradient(#e9e9ec 0 25%, #ffffff 0 50%, #e9e9ec 0 75%, #ffffff 0) 0 0 / 24px 24px;
 }
 
 #source-details {
