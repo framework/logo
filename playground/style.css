@@ -276,16 +276,14 @@ button:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e4e4e7;
-  border-radius: 12px;
-  background: #fafafa;
 }
 
-/* The checkerboard sits on the svg itself, so it marks the exact canvas
-   (incl. `padding`) and makes a transparent background visible. */
+/* The border & checkerboard sit on the svg itself, so they mark the exact
+   canvas (incl. `padding`) and make a transparent background visible. */
 #preview svg {
   width: min(70vmin, 100%);
   height: min(70vmin, 100%);
+  border: 1px solid #e4e4e7;
   background: conic-gradient(#e9e9ec 0 25%, #ffffff 0 50%, #e9e9ec 0 75%, #ffffff 0) 0 0 / 24px 24px;
 }
 
