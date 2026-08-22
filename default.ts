@@ -14,6 +14,19 @@ if (!DEFAULT_PALETTE)
 const size = 478;
 const lineWidth = 61;
 const holeSize = 186;
+const padding = 50;
+
+/**
+ * Padding presets for exported assets (e.g. the PNG variants in README.md),
+ * in the same units as `size`; `medium` is the mark's own default.
+ */
+export const PADDING_PRESETS = {
+  none: 0,
+  small: 24,
+  medium: padding,
+  large: 120,
+} as const;
+export type PaddingPreset = keyof typeof PADDING_PRESETS;
 
 /** Defaults: the Everforest palette flowing around the ring; `--colors=#333333` restores the flat original. */
 export const DEFAULTS: Required<Omit<HexKnotParams, "onWarn">> = {
@@ -23,7 +36,7 @@ export const DEFAULTS: Required<Omit<HexKnotParams, "onWarn">> = {
   holeSize,
   bandGap: bandGapFromHoleSize({ size, lineWidth, holeSize }),
   cornerRadius: 10,
-  padding: 50,
+  padding,
   rotation: 180,
   background: null,
   precision: 1,

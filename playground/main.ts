@@ -4,6 +4,7 @@
  */
 
 import { COLOR_PALETTES, PALETTE_GROUPS } from "../color-palettes.ts";
+import { PADDING_PRESETS } from "../default.ts";
 import {
   bandGapFromHoleSize,
   DEFAULTS,
@@ -20,6 +21,9 @@ import {
 type State = Omit<Required<HexKnotParams>, "idPrefix" | "onWarn">;
 
 const { idPrefix: _idPrefix, ...stateDefaults } = DEFAULTS;
+// The playground previews the bare mark: padding starts at the "none" preset
+// (0) and is picked via the preset select above the preview.
+stateDefaults.padding = PADDING_PRESETS.none;
 
 // The numeric parameters, each with the control range it gets in the sidebar.
 // `NumericKey` is derived from State, so TypeScript keeps this registry
@@ -299,6 +303,35 @@ controls.append(el("div", { class: "palettes" }, ...paletteGroups));
 
 // ----------------------------------------------------------------- actions
 
+// Padding: a preset pick plus a free slider, applied to the live preview
+// (and thus everything copied/downloaded). Both drive the same `padding` as
+// the sidebar row; a value matching no preset shows as "custom".
+const paddingSelect = $<HTMLSelectElement>("#padding-preset");
+const paddingSlider = $<HTMLInputElement>("#padding-slider");
+paddingSelect.append(
+  ...Object.entries(PADDING_PRESETS).map(([name, value]) =>
+    el("option", { value: String(value) }, name),
+  ),
+  el("option", { value: "custom", disabled: "", hidden: "" }, "custom"),
+);
+paddingSelect.addEventListener("input", () => {
+  setSliderValue("padding", Number(paddingSelect.value));
+  render();
+});
+paddingSlider.addEventListener("input", () => {
+  setSliderValue("padding", Number(paddingSlider.value));
+  render();
+});
+
+/** Point the preset select & stage slider at the current state.padding. */
+function syncPaddingControls(): void {
+  const value = String(state.padding);
+  paddingSelect.value = Object.values(PADDING_PRESETS).some((p) => String(p) === value)
+    ? value
+    : "custom";
+  paddingSlider.value = value;
+}
+
 $("#reset").addEventListener("click", () => {
   Object.assign(state, stateDefaults, { colors: [...stateDefaults.colors] });
   for (const key of NUMERIC_KEYS) setSliderValue(key, state[key]);
@@ -322,6 +355,60 @@ $("#download").addEventListener("click", () => {
   const link = el("a", { href: url, download: "hexknot.svg" });
   link.click();
   URL.revokeObjectURL(url);
+});
+
+// PNG export rasterizes at the width given by the "PNG size" controls (height
+// follows the aspect ratio), independent of the mark's own `size`, so the
+// exported icon stays crisp however the preview is configured. The preset
+// select offers the usual icon sizes; the input takes any value.
+const PNG_EXPORT_SIZE = 1024;
+const PNG_SIZE_PRESETS = [16, 32, 64, 128, 256, 512, 1024, 2048];
+
+const pngSizeSelect = $<HTMLSelectElement>("#png-size-preset");
+const pngSizeInput = $<HTMLInputElement>("#png-size");
+pngSizeSelect.append(
+  ...PNG_SIZE_PRESETS.map((px) => el("option", { value: String(px) }, String(px))),
+  el("option", { value: "custom", disabled: "", hidden: "" }, "custom"),
+);
+pngSizeInput.value = String(PNG_EXPORT_SIZE);
+pngSizeSelect.value = String(PNG_EXPORT_SIZE);
+pngSizeSelect.addEventListener("input", () => {
+  pngSizeInput.value = pngSizeSelect.value;
+});
+pngSizeInput.addEventListener("input", () => {
+  const value = pngSizeInput.value;
+  pngSizeSelect.value = PNG_SIZE_PRESETS.some((px) => String(px) === value) ? value : "custom";
+});
+
+$("#download-png").addEventListener("click", async () => {
+  const match = /viewBox="([-\d.]+) ([-\d.]+) ([-\d.]+) ([-\d.]+)"/.exec(currentSvg);
+  if (!match) return;
+  const [, , , viewBoxWidth, viewBoxHeight] = match.map(Number);
+  const pngSize = Math.round(Number(pngSizeInput.value)) || PNG_EXPORT_SIZE;
+  const canvas = document.createElement("canvas");
+  canvas.width = pngSize;
+  canvas.height = Math.round((pngSize * viewBoxHeight) / viewBoxWidth);
+
+  const svgUrl = URL.createObjectURL(new Blob([currentSvg], { type: "image/svg+xml" }));
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error("Failed to rasterize SVG"));
+      img.src = svgUrl;
+    });
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+  } finally {
+    URL.revokeObjectURL(svgUrl);
+  }
+
+  const pngBlob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (!pngBlob) return;
+  const pngUrl = URL.createObjectURL(pngBlob);
+  const link = el("a", { href: pngUrl, download: "hexknot.png" });
+  link.click();
+  URL.revokeObjectURL(pngUrl);
 });
 
 // -------------------------------------------------------- animated favicon
@@ -437,6 +524,7 @@ function render(): void {
     sliderRows.get(key)!.classList.toggle("inactive", inactive);
   }
 
+  syncPaddingControls();
   syncFaviconAnimation();
   syncUrl();
 }

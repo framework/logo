@@ -618,18 +618,13 @@ export function hexKnotSvg(params: HexKnotParams = {}): string {
   }
 
   // Everything is drawn around (0,0), so the viewBox is symmetric about the
-  // origin. The bounds hug the hexagon's convex hull: its corners sit at the
-  // circumradius, at 90° + rotation and every 60° onward. `breathing` spins
-  // the mark through every angle, so its worst-case bound is the full
-  // circumradius in both directions (a corner pointing straight along the axis).
-  const hexCorners = ANGLES.map((angle) => unit(angle + 90 + p.rotation));
-  const halfW = p.breathing
-    ? circumradius + p.padding
-    : circumradius * Math.max(...hexCorners.map(([x]) => Math.abs(x))) + p.padding;
-  const halfH = p.breathing
-    ? circumradius + p.padding
-    : circumradius * Math.max(...hexCorners.map(([, y]) => Math.abs(y))) + p.padding;
-  const [x, y, w, h] = [-halfW, -halfH, 2 * halfW, 2 * halfH].map(fmt);
+  // origin. The canvas is SQUARE, sized by the hexagon's circumcircle:
+  // `padding` is the margin between that circle and the canvas edge, which
+  // keeps exports icon-shaped, the mark centered with matching margins on
+  // opposite sides, and the canvas stable under `rotation` (and under
+  // `breathing`, which spins the mark through every angle).
+  const half = circumradius + p.padding;
+  const [x, y, w, h] = [-half, -half, 2 * half, 2 * half].map(fmt);
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${w} ${h}">`,
