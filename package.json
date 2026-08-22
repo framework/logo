@@ -2,8 +2,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite playground --port 3000",
-    "build": "pnpm run node-ts cli.ts",
-    "build:watch": "pnpm run node-ts --watch cli.ts",
+    "build": "pnpm run node-ts build.ts",
+    "build:watch": "pnpm run node-ts --watch build.ts",
     "========= Formatting": "",
     "format": "oxfmt",
     "========= Reset": "",
@@ -15,6 +15,7 @@
     "preinstall": "npx only-allow pnpm"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@types/node": "^25.6.2",
     "oxfmt": "^0.48.0",
     "vite": "^8.0.11"
