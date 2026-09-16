@@ -19,6 +19,20 @@
         <div id="warnings" hidden></div>
       </aside>
       <section id="stage">
+        <!-- Preview settings only style the page around the SVG; the SVG and its exports are unaffected. -->
+        <div id="preview-settings">
+          <label
+            >preview size
+            <select id="preview-size-preset"></select>
+            <input id="preview-size" type="number" min="8" max="4096" step="1" placeholder="fit"
+          /></label>
+          <label
+            >preview background
+            <input id="preview-background-on" type="checkbox" checked />
+            <input id="preview-background" type="color" value="#ffffff"
+          /></label>
+        </div>
+        <div id="preview"></div>
         <div id="stage-actions">
           <label id="padding-control"
             >padding
@@ -34,7 +48,6 @@
           /></label>
           <button id="download-png" type="button">Download PNG</button>
         </div>
-        <div id="preview"></div>
         <details id="source-details">
           <summary>SVG source <span id="byte-count"></span></summary>
           <pre id="source"></pre>
