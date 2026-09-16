@@ -107,6 +107,9 @@ function syncUrl(): void {
     query.set("background", state.background ?? "");
   if (state.animated !== stateDefaults.animated) query.set("animated", String(state.animated));
   if (state.breathing !== stateDefaults.breathing) query.set("breathing", String(state.breathing));
+  if (previewSize !== PREVIEW_SIZE_DEFAULT)
+    query.set("previewSize", previewSize ? String(previewSize) : "fit");
+  if (previewBackground !== "#ffffff") query.set("previewBackground", previewBackground);
   const search = query.toString();
   history.replaceState(null, "", search ? `?${search}` : location.pathname);
 }
@@ -332,6 +335,84 @@ function syncPaddingControls(): void {
   paddingSlider.value = value;
 }
 
+// ----------------------------------------------------------------- preview
+//
+// Preview settings style the DOM around the SVG — how big it is shown, and
+// what's behind it — and nothing else: the SVG itself, and so every copy,
+// download and PNG export, is unaffected. (The sidebar's `background` is
+// the opposite: part of the SVG, and it paints over this backdrop.)
+
+/** Icon sizes to show the mark at; "fit" fills the stage instead. */
+const PREVIEW_SIZES = [16, 24, 32, 48, 64, 128, 256, 512];
+const CHECKERBOARD = "checkerboard";
+
+const previewSizeSelect = $<HTMLSelectElement>("#preview-size-preset");
+const previewSizeInput = $<HTMLInputElement>("#preview-size");
+const previewBackgroundToggle = $<HTMLInputElement>("#preview-background-on");
+const previewBackgroundPicker = $<HTMLInputElement>("#preview-background");
+
+/** Displayed size of the SVG in CSS pixels; null fits it to the stage. */
+const PREVIEW_SIZE_DEFAULT = 64;
+let previewSize: number | null = PREVIEW_SIZE_DEFAULT;
+/** Backdrop of the preview area: a color, or (toggle off) the transparency checkerboard. */
+let previewBackground = "#ffffff";
+{
+  // Restore the preview settings from the query string, like the mark's parameters.
+  const query = new URLSearchParams(location.search);
+  const size = query.get("previewSize");
+  if (size === "fit") previewSize = null;
+  else if (Number(size) > 0) previewSize = Number(size);
+  const background = query.get("previewBackground");
+  if (background && (background === CHECKERBOARD || /^#[0-9a-f]{6}$/i.test(background)))
+    previewBackground = background;
+}
+
+previewSizeSelect.append(
+  el("option", { value: "" }, "fit"),
+  ...PREVIEW_SIZES.map((px) => el("option", { value: String(px) }, `${px}px`)),
+  el("option", { value: "custom", disabled: "", hidden: "" }, "custom"),
+);
+previewSizeSelect.addEventListener("input", () => {
+  previewSize = previewSizeSelect.value ? Number(previewSizeSelect.value) : null;
+  applyPreview();
+  syncUrl();
+});
+previewSizeInput.addEventListener("input", () => {
+  const value = Number(previewSizeInput.value);
+  previewSize = previewSizeInput.value && value > 0 ? value : null;
+  applyPreview();
+  syncUrl();
+});
+previewBackgroundToggle.addEventListener("input", () => {
+  previewBackground = previewBackgroundToggle.checked
+    ? previewBackgroundPicker.value
+    : CHECKERBOARD;
+  applyPreview();
+  syncUrl();
+});
+previewBackgroundPicker.addEventListener("input", () => {
+  previewBackground = previewBackgroundPicker.value;
+  applyPreview();
+  syncUrl();
+});
+
+/** Style the stage per the preview settings, and point the controls at them. */
+function applyPreview(): void {
+  const svg = preview.querySelector("svg");
+  if (svg) {
+    svg.style.width = previewSize ? `${previewSize}px` : "";
+    svg.style.height = previewSize ? `${previewSize}px` : "";
+  }
+  const checkerboard = previewBackground === CHECKERBOARD;
+  preview.classList.toggle(CHECKERBOARD, checkerboard);
+  preview.style.background = checkerboard ? "" : previewBackground;
+  const size = previewSize ? String(previewSize) : "";
+  previewSizeSelect.value = !previewSize || PREVIEW_SIZES.includes(previewSize) ? size : "custom";
+  previewSizeInput.value = size;
+  previewBackgroundToggle.checked = !checkerboard;
+  if (!checkerboard) previewBackgroundPicker.value = previewBackground;
+}
+
 $("#reset").addEventListener("click", () => {
   Object.assign(state, stateDefaults, { colors: [...stateDefaults.colors] });
   for (const key of NUMERIC_KEYS) setSliderValue(key, state[key]);
@@ -500,6 +581,7 @@ function render(): void {
   try {
     currentSvg = hexKnotSvg({ ...state, onWarn: (message) => warnings.push(message) });
     preview.innerHTML = currentSvg;
+    applyPreview();
     source.textContent = currentSvg;
     byteCount.textContent = `(${currentSvg.length} bytes)`;
     favicon.href = `data:image/svg+xml,${encodeURIComponent(currentSvg)}`;

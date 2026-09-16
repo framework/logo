@@ -230,12 +230,23 @@ button:disabled {
   overflow-y: auto;
 }
 
+/* Above the preview: how it is shown (size, backdrop) — settings that leave
+   the SVG untouched. Below it: what goes into the SVG (padding) and the
+   export actions. */
+#preview-settings,
 #stage-actions {
   display: flex;
   gap: 8px;
-  justify-content: flex-end;
   align-items: center;
   flex-wrap: wrap;
+}
+
+#preview-settings {
+  gap: 16px;
+}
+
+#stage-actions {
+  justify-content: flex-end;
 }
 
 #stage-actions input[type="range"] {
@@ -243,6 +254,7 @@ button:disabled {
   accent-color: #7209b7;
 }
 
+#preview-settings label,
 #stage-actions label {
   display: flex;
   align-items: center;
@@ -251,12 +263,24 @@ button:disabled {
   color: #52525b;
 }
 
-/* The padding preset sits apart on the left: it tweaks the live preview,
-   unlike the export actions next to it. */
+/* The padding sits apart on the left: it tweaks the mark, unlike the export
+   actions next to it. */
 #padding-control {
   margin-right: auto;
 }
 
+#preview-settings input[type="color"] {
+  width: 36px;
+  height: 26px;
+  padding: 1px;
+  border: 1px solid #d4d4d8;
+  border-radius: 6px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+#preview-settings select,
+#preview-settings input[type="number"],
 #stage-actions select,
 #stage-actions input[type="number"] {
   padding: 4px 6px;
@@ -267,24 +291,31 @@ button:disabled {
   background: #ffffff;
 }
 
+#preview-settings input[type="number"],
 #stage-actions input[type="number"] {
   width: 72px;
 }
 
+/* The backdrop covers the whole preview area (the preview background
+   setting sets it inline); without one, a checkerboard makes a transparent
+   canvas visible. */
 #preview {
   flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 12px;
+  background: #ffffff;
 }
 
-/* The border & checkerboard sit on the svg itself, so they mark the exact
-   canvas (incl. `padding`) and make a transparent background visible. */
+#preview.checkerboard {
+  background: conic-gradient(#e9e9ec 0 25%, #ffffff 0 50%, #e9e9ec 0 75%, #ffffff 0) 0 0 / 24px 24px;
+}
+
+/* Fits the stage unless the preview size setting overrides the size inline. */
 #preview svg {
   width: min(70vmin, 100%);
   height: min(70vmin, 100%);
-  border: 1px solid #e4e4e7;
-  background: conic-gradient(#e9e9ec 0 25%, #ffffff 0 50%, #e9e9ec 0 75%, #ffffff 0) 0 0 / 24px 24px;
 }
 
 #source-details {
