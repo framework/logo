@@ -318,6 +318,11 @@ button:disabled {
   height: min(70vmin, 100%);
 }
 
+/* On the checkerboard, a border marks the exact canvas (incl. `padding`). */
+#preview.checkerboard svg {
+  border: 1px solid #e4e4e7;
+}
+
 #source-details {
   border: 1px solid #e4e4e7;
   border-radius: 12px;
